@@ -243,13 +243,18 @@ function drawWalls(g, level) {
   }
 }
 
-/** A guard: navy uniform, peaked cap, a baton tick toward his facing. */
+/** A guard: navy uniform, a lit face and peaked cap toward his facing. */
 function drawGuard(g, guard) {
   const { x, y } = guard;
+  const fx = Math.cos(guard.face);
+  const fy = Math.sin(guard.face);
+  const px = -fy;
+  const py = fx;
   g.fillStyle = 'rgba(0,0,0,0.35)';
   g.beginPath();
   g.ellipse(x, y + 12, 13, 5, 0, 0, Math.PI * 2);
   g.fill();
+  // Uniform body.
   g.fillStyle = guard.state === 'patrol' ? '#2c4a8a' : '#8a5a2c';
   g.beginPath();
   g.arc(x, y, 13, 0, Math.PI * 2);
@@ -257,17 +262,45 @@ function drawGuard(g, guard) {
   g.strokeStyle = GOLD;
   g.lineWidth = 1.6;
   g.stroke();
-  // Cap brim toward facing.
-  const fx = Math.cos(guard.face);
-  const fy = Math.sin(guard.face);
-  g.fillStyle = '#16264f';
-  g.beginPath();
-  g.arc(x + fx * 4, y + fy * 4, 7.6, 0, Math.PI * 2);
-  g.fill();
+  // His face: a lit wedge on the side he looks toward.
   g.fillStyle = CREAM;
   g.beginPath();
-  g.arc(x + fx * 6.4, y + fy * 6.4, 3.1, 0, Math.PI * 2);
+  g.moveTo(x, y);
+  g.arc(x, y, 9.2, guard.face - 0.95, guard.face + 0.95);
+  g.closePath();
   g.fill();
+  // Gold epaulettes on both shoulders.
+  g.fillStyle = GOLD;
+  for (const s of [-1, 1]) {
+    g.beginPath();
+    g.arc(x + px * s * 10.6, y + py * s * 10.6, 2.2, 0, Math.PI * 2);
+    g.fill();
+  }
+  // Peaked cap, set back from the face, its brim reaching over it.
+  const cx = x - fx * 1.6;
+  const cy = y - fy * 1.6;
+  g.fillStyle = '#16264f';
+  g.beginPath();
+  g.arc(cx, cy, 7, 0, Math.PI * 2);
+  g.fill();
+  g.strokeStyle = 'rgba(217, 168, 63, 0.8)';
+  g.lineWidth = 1.1;
+  g.stroke();
+  g.fillStyle = '#0d1734';
+  g.beginPath();
+  g.ellipse(cx + fx * 6.6, cy + fy * 6.6, 5.4, 3.2, guard.face, 0, Math.PI * 2);
+  g.fill();
+  g.fillStyle = GOLD_BRIGHT;
+  g.beginPath();
+  g.arc(cx, cy, 1.9, 0, Math.PI * 2);
+  g.fill();
+  // Eyes on the lit face, past the brim, looking where he faces.
+  g.fillStyle = '#131c42';
+  for (const s of [-1, 1]) {
+    g.beginPath();
+    g.arc(x + fx * 8.2 + px * s * 2.7, y + fy * 8.2 + py * s * 2.7, 1.5, 0, Math.PI * 2);
+    g.fill();
+  }
   // Baton.
   g.strokeStyle = '#0a0e22';
   g.lineWidth = 3;
@@ -283,78 +316,136 @@ function drawGuard(g, guard) {
   }
 }
 
-/** A camera: wall mount, a lens that tracks its cone, a blinking eye. */
+/** A camera: a pendant mount at its post, a boxy body whose lens leads. */
 function drawCamera(g, camera, time) {
   const { x, y } = camera;
   const dead = camera.disabledT > 0;
+  g.save();
+  g.translate(x, y);
+  g.rotate(camera.angle);
+  // Mount plate at the post itself, and the drop rod the body hangs from:
+  // the body rides out along its facing so it hangs clear in the room.
+  g.fillStyle = '#171d38';
+  g.strokeStyle = 'rgba(217, 168, 63, 0.45)';
+  g.lineWidth = 1.2;
+  g.beginPath();
+  g.roundRect(-5, -8, 8, 16, 2);
+  g.fill();
+  g.stroke();
+  g.strokeStyle = '#39406b';
+  g.lineWidth = 3.4;
+  g.beginPath();
+  g.moveTo(2, 0);
+  g.lineTo(25, 0);
+  g.stroke();
+  g.fillStyle = '#39406b';
+  g.beginPath();
+  g.arc(25, 0, 3.6, 0, Math.PI * 2);
+  g.fill();
+  // Boxy body at the rod's end, nose toward the cone it watches.
   g.fillStyle = dead ? '#3a3f52' : '#232c58';
   g.strokeStyle = dead ? '#6a7086' : GOLD;
   g.lineWidth = 1.6;
   g.beginPath();
-  g.roundRect(x - 10, y - 8, 20, 16, 4);
+  g.roundRect(24, -8, 21, 16, 3);
   g.fill();
   g.stroke();
-  const fx = Math.cos(camera.angle);
-  const fy = Math.sin(camera.angle);
+  // Lens barrel at the nose, with a glint of glass.
   g.fillStyle = dead ? '#22242f' : '#0d1330';
   g.beginPath();
-  g.arc(x + fx * 7, y + fy * 7, 5.4, 0, Math.PI * 2);
+  g.arc(42, 0, 6, 0, Math.PI * 2);
   g.fill();
+  g.strokeStyle = dead ? '#555a6e' : 'rgba(217, 168, 63, 0.7)';
+  g.lineWidth = 1.1;
+  g.stroke();
   if (!dead) {
+    g.fillStyle = 'rgba(170, 205, 255, 0.9)';
+    g.beginPath();
+    g.arc(43.6, -2, 1.9, 0, Math.PI * 2);
+    g.fill();
+    // Recording eye, blinking on the body's shoulder.
     g.fillStyle = Math.sin(time * 4 + camera.phase) > 0 ? '#ff4040' : '#7a1610';
     g.beginPath();
-    g.arc(x - 6, y - 5, 2.2, 0, Math.PI * 2);
+    g.arc(28.5, -9.6, 2.3, 0, Math.PI * 2);
     g.fill();
   } else {
+    // A dead camera sparks where its lens used to watch.
     g.strokeStyle = '#ffd76a';
     g.lineWidth = 1.4;
     g.beginPath();
-    g.moveTo(x - 4, y + 10);
-    g.lineTo(x, y + 15);
-    g.lineTo(x + 3, y + 10);
+    g.moveTo(30, 10);
+    g.lineTo(34, 15);
+    g.lineTo(37, 10);
     g.stroke();
   }
+  g.restore();
 }
 
-/** The thief: a dark hood, a cream face toward facing, gold on his back. */
+/** The thief: a hooded figure in a bell cloak, his face lit toward facing. */
 function drawPlayer(g, player, time) {
   const { x, y } = player;
   const bob = player.moving ? Math.sin(player.stepPhase) * 1.6 : Math.sin(time * 2) * 0.7;
+  const fx = Math.cos(player.face);
+  const fy = Math.sin(player.face);
   g.fillStyle = 'rgba(0,0,0,0.4)';
   g.beginPath();
-  g.ellipse(x, y + 12, 12, 4.6, 0, 0, Math.PI * 2);
+  g.ellipse(x, y + 13, 13, 5, 0, 0, Math.PI * 2);
   g.fill();
   if (player.sneaking) {
     g.strokeStyle = 'rgba(242, 231, 201, 0.4)';
     g.setLineDash([4, 5]);
     g.lineWidth = 1.2;
     g.beginPath();
-    g.arc(x, y, 19, 0, Math.PI * 2);
+    g.arc(x, y, 20, 0, Math.PI * 2);
     g.stroke();
     g.setLineDash([]);
   }
+  // The loot sack rides on his back, opposite the way he faces.
+  if (player.carrying) {
+    const sx = x - fx * 12.4;
+    const sy = y - fy * 12.4 + bob * 0.4;
+    g.fillStyle = GOLD_BRIGHT;
+    g.beginPath();
+    g.ellipse(sx, sy, 6.6, 5.8, player.face, 0, Math.PI * 2);
+    g.fill();
+    g.strokeStyle = '#7a5410';
+    g.lineWidth = 1.1;
+    g.stroke();
+    g.beginPath();
+    g.moveTo(sx - 2.6, sy - 3.4);
+    g.lineTo(sx + 2.6, sy + 3.4);
+    g.stroke();
+  }
+  // Bell cloak: gathered at the hood, flaring out to the hem at his feet.
+  const topX = x + fx * 1.6;
+  const topY = y - 12 + bob * 0.4 + fy * 1.6;
+  const hemY = y + 12;
   g.fillStyle = '#20242e';
   g.beginPath();
-  g.ellipse(x, y + bob * 0.4, player.sneaking ? 14 : 12.4, player.sneaking ? 10.6 : 12.4, 0, 0, Math.PI * 2);
+  g.moveTo(topX - 4.4, topY);
+  g.bezierCurveTo(x - 12, y + 1, x - 14, hemY - 5, x - 13.4, hemY);
+  g.quadraticCurveTo(x, hemY + 3.6, x + 13.4, hemY);
+  g.bezierCurveTo(x + 14, hemY - 5, x + 12, y + 1, topX + 4.4, topY);
+  g.quadraticCurveTo(topX, topY - 3, topX - 4.4, topY);
+  g.closePath();
   g.fill();
   g.strokeStyle = 'rgba(217, 168, 63, 0.85)';
   g.lineWidth = 1.5;
   g.stroke();
-  const fx = Math.cos(player.face);
-  const fy = Math.sin(player.face);
+  // The hood: a dark ring leaning into his facing, face lit inside it.
+  const hx = x + fx * 3;
+  const hy = y - 4.4 + bob * 0.4 + fy * 3;
+  g.fillStyle = '#101319';
+  g.beginPath();
+  g.arc(hx, hy, 8.4, 0, Math.PI * 2);
+  g.fill();
+  g.strokeStyle = 'rgba(217, 168, 63, 0.9)';
+  g.lineWidth = 1.5;
+  g.stroke();
   g.fillStyle = CREAM;
   g.beginPath();
-  g.arc(x + fx * 5.4, y + fy * 5.4 + bob * 0.4, 4.6, 0, Math.PI * 2);
+  g.arc(hx + fx * 3.4, hy + fy * 3.4, 3, 0, Math.PI * 2);
   g.fill();
-  if (player.carrying) {
-    g.fillStyle = GOLD_BRIGHT;
-    g.beginPath();
-    g.ellipse(x - fx * 7, y - fy * 7 + bob * 0.4, 5.4, 4, player.face, 0, Math.PI * 2);
-    g.fill();
-    g.strokeStyle = '#7a5410';
-    g.lineWidth = 1;
-    g.stroke();
-  }
 }
 
 /**
